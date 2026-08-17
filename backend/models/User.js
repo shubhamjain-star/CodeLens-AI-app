@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema(
       minlength: 6,
     },
 
+    timezone: {
+      type: String,
+      default: "UTC",
+    },
+
     reviewsToday: {
       type: Number,
       default: 0,

@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 
 export const signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password,timezone } = req.body;
 
     // 1. Check required fields
     if (!name || !email || !password) {
@@ -37,6 +37,7 @@ export const signup = async (req, res) => {
       name,
       email,
       password: hashedPassword,
+      timezone: timezone|| "UTC",
     });
 
     // 6. Generate JWT
@@ -58,6 +59,7 @@ export const signup = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        timezone: user.timezone,
       },
     });
   } catch (error) {
@@ -120,6 +122,7 @@ export const login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        timezone: user.timezone,
       },
     });
   } catch (error) {
@@ -134,7 +137,7 @@ export const login = async (req, res) => {
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select(
-      "name email reviewsToday"
+      "name email reviewsToday timezone"
     );
 
     if (!user) {
@@ -149,6 +152,7 @@ export const getProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         reviewsToday: user.reviewsToday,
+        timezone:user.timezone,
       },
     });
   } catch (error) {

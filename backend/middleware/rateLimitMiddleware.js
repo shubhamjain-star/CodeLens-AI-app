@@ -1,5 +1,5 @@
-
 import User from "../models/User.js";
+import { formatInTimeZone } from "date-fns-tz";
 
 const DAILY_LIMIT = 5;
 
@@ -17,13 +17,38 @@ export const rateLimit = async (req, res, next) => {
       });
     }
 
-    // Get today's date
-    const today = new Date();
+    // Get user's timezone
+    const timezone = user.timezone || "UTC";
 
-    // Check whether the last review was on a previous day
+    // Get today's date according to user's timezone
+    const today = formatInTimeZone(
+      new Date(),
+      timezone,
+      "yyyy-MM-dd"
+    );
+
+    // Get the date of the user's last review
+    // according to user's timezone
+    const lastReviewDay = user.lastReviewDate
+      ? formatInTimeZone(
+          user.lastReviewDate,
+          timezone,
+          "yyyy-MM-dd"
+        )
+      : null;
+
+      // Debug logs
+      console.log("User timezone:", timezone);
+      console.log("Today's local date:", today);
+      console.log("Last review local date:", lastReviewDay);
+      
+
+    // Check whether user's local calendar day has changed
     const isNewDay =
-      !user.lastReviewDate ||
-      user.lastReviewDate.toDateString() !== today.toDateString();
+      !lastReviewDay || lastReviewDay !== today;
+
+    console.log("reviewsToday BEFORE:", user.reviewsToday);
+    console.log("isNewDay:", isNewDay);
 
     // If it's a new day, reset the counter
     if (isNewDay) {
@@ -42,7 +67,9 @@ export const rateLimit = async (req, res, next) => {
 
     // Consume one request
     user.reviewsToday += 1;
-    user.lastReviewDate = today;
+
+    // Store the actual current timestamp
+    user.lastReviewDate = new Date();
 
     await user.save();
 

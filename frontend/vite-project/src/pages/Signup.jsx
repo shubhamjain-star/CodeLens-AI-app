@@ -41,12 +41,15 @@ export default function Signup() {
 
     try {
       setLoading(true);
+      // automatically detect user's time zone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
       // Backend expects "name", not "fullName"
       const signupData = {
         name: formData.fullName,
         email: formData.email,
         password: formData.password,
+        timezone
       };
 
       // Send signup request
