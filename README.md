@@ -479,7 +479,7 @@ Full-Stack Developer | React | Node.js | MongoDB | JavaScript
 
 ---
 
-## upport
+## Support
 
 If you find this project interesting, consider giving it a ⭐ on GitHub.
 
