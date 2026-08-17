@@ -24,6 +24,9 @@ export default function Navbar() {
   // Redux
   const dispatch = useDispatch();
   const mode = useSelector((state) => state.theme.mode);
+  const isAuthenticated=useSelector(
+    (state) => state.auth.isAuthenticated
+  );
   const isDarkMode = mode === "dark";
 
   // Apply dark mode
@@ -138,6 +141,7 @@ export default function Navbar() {
             </button>
 
             {/* Profile */}
+            {isAuthenticated ?(
             <Link
               to="/profile"
               aria-label="User Profile"
@@ -148,6 +152,14 @@ export default function Navbar() {
                 className="w-4 h-4"
               />
             </Link>
+          ):(
+            <Link
+            to="/login"
+            className="px-4 py-2 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium"
+            >
+              Login
+            </Link>
+          )}
 
           </div>
 
@@ -236,18 +248,28 @@ export default function Navbar() {
           </Link>
 
           {/* Profile */}
-          <Link
-            to="/profile"
-            onClick={closeMobileMenu}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          >
-            <FontAwesomeIcon
-              icon={faUser}
-              className="w-4 h-4 text-blue-500"
-            />
+        {isAuthenticated ? (
+  <Link
+    to="/profile"
+    onClick={closeMobileMenu}
+    className="flex items-center gap-3 px-3 py-2.5 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+  >
+    <FontAwesomeIcon
+      icon={faUser}
+      className="w-4 h-4 text-blue-500"
+    />
 
-            Profile
-          </Link>
+    Profile
+  </Link>
+) : (
+  <Link
+    to="/login"
+    onClick={closeMobileMenu}
+    className="flex items-center px-3 py-2.5 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+  >
+    Login
+  </Link>
+)}
 
         </div>
       )}

@@ -2,10 +2,10 @@
 import EditorShimmer from "../components/reviewer/EditorShimmer";
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRotateRight } from "@fortawesome/free-solid-svg-icons";
+import { faRotateRight, faCopy} from "@fortawesome/free-solid-svg-icons";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-
+import {toast} from 'react-toastify';
 import CodeEditor from "../components/reviewer/CodeEditor";
 import LanguageSelector from "../components/reviewer/LanguageSelector";
 import ReviewPanel from "../components/reviewer/ReviewPanel";
@@ -33,6 +33,16 @@ const ReviewCode = () => {
     setCode(defaultCode[newLanguage]);
     setReview(null);
   };
+  const handleCopyCode = async () => {
+  try {
+    await navigator.clipboard.writeText(code || "");
+
+    toast.success("Code copied to clipboard");
+  } catch (error) {
+    console.error("Copy failed:", error);
+    toast.error("Failed to copy code");
+  }
+};
 
   const handleReview = async () => {
     // 1. Check if code is empty
@@ -125,6 +135,19 @@ const ReviewCode = () => {
             {/* Editor Top Bar */}
             <div className="flex items-center justify-end border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-4 py-3">
 
+               {/* Copy Code button */}
+  <button
+    onClick={handleCopyCode}
+    className="flex items-center gap-2 rounded-md p-1.5 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white transition"
+    title="Copy Code"
+    aria-label="Copy Code"
+  >
+    <FontAwesomeIcon
+      icon={faCopy}
+      className="h-4 w-4"
+    />
+  </button> 
+            {/* Reset Button */}
               <button
                 onClick={() => {
                   setCode(defaultCode[language]);
