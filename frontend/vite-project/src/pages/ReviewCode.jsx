@@ -27,6 +27,7 @@ const ReviewCode = () => {
   const [editorLoading, setEditorLoading] = useState(true);
   const [review, setReview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [retryMessage, setRetryMessage] = useState("");
 
   const handleLanguageChange = (newLanguage) => {
     setLanguage(newLanguage);
@@ -44,62 +45,117 @@ const ReviewCode = () => {
   }
 };
 
-  const handleReview = async () => {
-    // 1. Check if code is empty
-    if (!code.trim()) {
-      alert("Please write some code first.");
-      return;
-    }
+const delay = (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
-    // 2. Check authentication
-    if (!isAuthenticated) {
-      // User is not logged in
-      navigate("/login");
-      return;
-    }
+const handleReview = async () => {
+  // 1. Check if code is empty
+  if (!code.trim()) {
+    alert("Please write some code first.");
+    return;
+  }
 
-    try {
-      setLoading(true);
+  // 2. Check authentication
+  if (!isAuthenticated) {
+    navigate("/login");
+    return;
+  }
 
-      // 3. Send request
-      // JWT will automatically be attached
-      // by the Axios interceptor in api.js
-      const response = await reviewCode(code, language);
+  // Retry delays: 10 sec → 20 sec → 25 sec
+  const retryDelays = [10000, 20000, 25000];
 
-      console.log("Gemini Review Response:", response);
+  try {
+    setLoading(true);
+    setRetryMessage("");
 
-      // 4. Set review result
-      setReview(response.review);
+    let response;
 
-    } catch (error) {
-      console.error("Review error:", error);
+    // Initial request + 3 retries
+    for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+      try {
+        // Send request
+        response = await reviewCode(code, language);
 
-      // 401 = JWT missing/invalid/expired
-      if (error.response?.status === 401) {
-        alert("Your session has expired. Please login again.");
+        // Request successful → stop retrying
+        break;
 
-        navigate("/login");
-        return;
-      }
+      } catch (error) {
+        console.error(`Review attempt ${attempt + 1} failed:`, error);
 
-      // 429 = daily request limit reached
-      if (error.response?.status === 429) {
-        alert(
-          error.response?.data?.message ||
-          "You have reached your daily review limit."
+        // Handle authentication error immediately
+        if (error.response?.status === 401) {
+          alert("Your session has expired. Please login again.");
+          navigate("/login");
+          return;
+        }
+
+        // Handle daily limit immediately
+        if (error.response?.status === 429) {
+          alert(
+            error.response?.data?.message ||
+            "You have reached your daily review limit."
+          );
+          return;
+        }
+
+        // Only retry 503 errors
+        if (error.response?.status !== 503) {
+          throw error;
+        }
+
+        // No more retries available
+        if (attempt === retryDelays.length) {
+          throw error;
+        }
+
+        // Get current retry delay
+        const delayTime = retryDelays[attempt];
+        const seconds = delayTime / 1000;
+
+        setRetryMessage(
+          `AI model is currently busy. Retrying in ${seconds} seconds...`
         );
-        return;
-      }
 
-      alert(
-        error.response?.data?.message ||
-        "Failed to review code"
+        // Wait before retrying
+        await delay(delayTime);
+
+        // Clear message before retry
+        setRetryMessage("");
+      }
+    }
+
+    console.log("Gemini Review Response:", response);
+
+    // Set successful review
+    setReview(response.review);
+
+  } catch (error) {
+    console.error("Review error:", error);
+
+    // Gemini still unavailable after all retries
+    if (error.response?.status === 503) {
+      toast.error(
+        "AI service is temporarily unavailable. Gemini is currently experiencing high demand. Please try again later.",
+        {
+          autoClose: 6000,
+        }
       );
 
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
+
+    // Other errors
+    toast.error(
+      error.response?.data?.message ||
+      "Failed to review code"
+    );
+
+  } finally {
+    setLoading(false);
+    setRetryMessage("");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white transition-colors duration-300">
@@ -186,9 +242,17 @@ const ReviewCode = () => {
             {/* Editor Footer */}
             <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-4 py-3">
 
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-500">
-                {code.length} characters
+              <div className="flex flex-col gap-1">
+                 <span className="text-xs font-medium text-gray-600 dark:text-gray-500">
+                  {code.length} characters
               </span>
+
+    {retryMessage && (
+      <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400">
+        {retryMessage}
+      </span>
+    )}
+  </div>
 
               <button
                 onClick={handleReview}

@@ -27,8 +27,7 @@ export const rateLimit = async (req, res, next) => {
       "yyyy-MM-dd"
     );
 
-    // Get the date of the user's last review
-    // according to user's timezone
+    // Get the date of user's last successful review
     const lastReviewDay = user.lastReviewDate
       ? formatInTimeZone(
           user.lastReviewDate,
@@ -37,11 +36,9 @@ export const rateLimit = async (req, res, next) => {
         )
       : null;
 
-      // Debug logs
-      console.log("User timezone:", timezone);
-      console.log("Today's local date:", today);
-      console.log("Last review local date:", lastReviewDay);
-      
+    console.log("User timezone:", timezone);
+    console.log("Today's local date:", today);
+    console.log("Last review local date:", lastReviewDay);
 
     // Check whether user's local calendar day has changed
     const isNewDay =
@@ -50,7 +47,7 @@ export const rateLimit = async (req, res, next) => {
     console.log("reviewsToday BEFORE:", user.reviewsToday);
     console.log("isNewDay:", isNewDay);
 
-    // If it's a new day, reset the counter
+    // Reset counter on a new day
     if (isNewDay) {
       user.reviewsToday = 0;
     }
@@ -65,15 +62,19 @@ export const rateLimit = async (req, res, next) => {
       });
     }
 
-    // Consume one request
-    user.reviewsToday += 1;
+    // Save reset if a new day occurred
+    if (isNewDay) {
+      await user.save();
+    }
 
-    // Store the actual current timestamp
-    user.lastReviewDate = new Date();
+  
+    // Do NOT increment reviewsToday here.
+    // The review should only be counted after Gemini
+    // successfully returns a review.
 
-    await user.save();
+    // Make user available to controller
+    req.reviewUser = user;
 
-    // Continue to review controller
     next();
 
   } catch (error) {
